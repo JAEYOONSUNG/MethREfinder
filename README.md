@@ -40,6 +40,11 @@ matched_enzymes <- match_enzyme_sequences(
   target_seq = "CGAANNNNNNNTARC"
 )
 ```
+## Quick start
+```r
+run_MethREfinder(target_seq = "CGAANNNNNNNTARC", mod_type = "6mA", window_sizes = c(4,5,6), direction = "forward", mod_position = 4)
+```
+
 
 ## Dependencies
 - **R (>= 4.0.0)**

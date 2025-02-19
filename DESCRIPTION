@@ -1,0 +1,25 @@
+Package: MethREfinder
+Title: MethREfinder - Methylation-Sensitive Restriction Enzyme Recognition Site Finder
+Version: 1.0.0
+Authors@R: 
+    person("Jae-Yoon", "Sung", , "o3wodbs@gmail.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-2475-8743"))
+Description: MethREfinder is a computational tool designed to identify methylation-sensitive restriction enzyme recognition sites within a given DNA sequence. This package leverages the REBASE database to cross-reference known restriction enzymes and determine their sensitivity to DNA methylation modifications. Researchers can use MethREfinder to assess the compatibility of restriction enzymes with methylated DNA regions, aiding in the selection of appropriate enzymes for molecular cloning, epigenetic studies, and DNA methylation analysis.
+License: MIT
+Encoding: UTF-8
+Depends:
+    httr,
+    xml2,
+    stringr,
+    dplyr,
+    tidyr,
+    xlsx
+Imports:
+    httr,
+    xml2,
+    stringr,
+    dplyr,
+    tidyr,
+    xlsx
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1

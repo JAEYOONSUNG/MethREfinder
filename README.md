@@ -61,13 +61,7 @@ matched_enzymes <- match_enzyme_sequences(
 run_MethREfinder(target_seq = "CGAANNNNNNNTARC", mod_type = "6mA", window_sizes = c(4,5,6), direction = "forward", mod_position = 4)
 ```
 
-
-## Dependencies
-- **R (>= 4.0.0)**
-- **xlsx**
-- **httr**
-
-## Advantages
+### Advantages
 - **Facilitates the selection of restriction enzymes for DNA samples with potential methylation modifications.**
 - **Reduces trial-and-error in enzyme selection for molecular cloning and epigenetics.**
 - **Integrates REBASE methylation sensitivity data directly into your sequence analysis pipeline.**

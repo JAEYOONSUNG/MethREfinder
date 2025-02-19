@@ -18,6 +18,13 @@ MethREfinder is a computational tool designed to identify methylation-sensitive 
 The MethREfinder is supported for macOS, Linux and Windows machines, which can provide an environment for using R.
 It requires R version >=4.2.1 for release, and R version >=4.3 for devel.
 
+```r
+# Install from GitHub (example, adjust based on your repo)
+install.packages("devtools")
+devtools::install_github("JAEYOONSUNG/MethREfinder")
+```
+
+## Getting Started
 #### Parameter Descriptions
 
 - **target_seq**: A DNA sequence provided as a character string. The sequence can include standard nucleotides (`A, T, G, C`) as well as ambiguous bases following the [IUPAC nucleotide code](https://www.bioinformatics.org/sms/iupac.html).
@@ -27,14 +34,6 @@ It requires R version >=4.2.1 for release, and R version >=4.3 for devel.
   - `6mA` (N6-methyladenine)
 - **mod_position**: The position of the modified base within **target_seq** (1-based indexing).
 - **window_sizes**: A vector of integers representing window lengths. These windows are generated based on the position of the modification (`mod_position`) and are designed to simulate the recognition sequence lengths of typical **Type II restriction enzymes**.
-
-```r
-# Install from GitHub (example, adjust based on your repo)
-install.packages("devtools")
-devtools::install_github("JAEYOONSUNG/MethREfinder")
-```
-
-## Getting Started
 
 ```r
 library(MethREfinder)

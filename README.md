@@ -10,6 +10,7 @@ MethREfinder is a computational tool designed to identify methylation-sensitive 
 - **Informed enzyme selection for experiments involving methylated DNA.**
 
 ## Anaylsis flow
+![MethREfinder](https://github.com/user-attachments/assets/7e0dd79a-ccb2-440a-9d7e-3ebfc1e45b00)
 
 
 ## Installation

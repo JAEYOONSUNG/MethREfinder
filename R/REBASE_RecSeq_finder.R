@@ -40,18 +40,31 @@ extract_all_windows_RecSeq <- function(
 ) {
   direction <- match.arg(direction)
   nseq      <- nchar(sequence)
-  
+
   rev_comp <- function(dna) {
-    rev_dna <- paste0(rev(strsplit(dna, "")[[1]]), collapse="")
-    dna_rc  <- chartr("ATGC", "TACG", rev_dna)
-    return(dna_rc)
+    # IUPAC 코드 변환 테이블 (1:1 치환)
+    iupac_complement <- c(
+      "A" = "T", "T" = "A", "G" = "C", "C" = "G",
+      "R" = "Y", "Y" = "R", "S" = "S", "W" = "W",
+      "K" = "M", "M" = "K", "B" = "V", "V" = "B",
+      "D" = "H", "H" = "D", "N" = "N"
+    )
+
+    # 서열 뒤집기
+    rev_dna <- rev(strsplit(dna, "")[[1]])
+
+    # Reverse Complement 변환 적용
+    dna_rc <- sapply(rev_dna, function(base) iupac_complement[base])
+
+    # 문자열로 반환
+    return(paste0(dna_rc, collapse=""))
   }
-  
+
   extract_exact_window <- function(seq, start_idx, win_size) {
     end_idx <- start_idx + win_size - 1
     prefixN <- 0
     suffixN <- 0
-    
+
     if (start_idx < 1) {
       prefixN   <- 1 - start_idx
       start_idx <- 1
@@ -67,7 +80,7 @@ extract_all_windows_RecSeq <- function(
     left_part  <- paste0(rep("N", prefixN), collapse="")
     right_part <- paste0(rep("N", suffixN), collapse="")
     raw_window <- paste0(left_part, core_sub, right_part)
-    
+
     lw <- nchar(raw_window)
     if (lw < win_size) {
       needed <- win_size - lw
@@ -80,32 +93,32 @@ extract_all_windows_RecSeq <- function(
       prefixN_count  = prefixN
     ))
   }
-  
+
   results <- list()
-  
+
   for (ws in window_sizes) {
     s_min <- mod_position - (ws - 1)
     s_max <- mod_position
     starts_vec <- seq(s_min, s_max)
-    
+
     row_list <- lapply(starts_vec, function(s0) {
       e0 <- s0 + ws - 1
       winfo <- extract_exact_window(sequence, s0, ws)
       wseq  <- winfo$window_seq
       pN    <- winfo$prefixN_count
-      
+
       offset_fwd <- pN + (mod_position - s0) + 1
-      
+
       if (direction == "reverse") {
         wseq <- rev_comp(wseq)
         offset_final <- ws - offset_fwd + 1
       } else {
         offset_final <- offset_fwd
       }
-      
+
       if (offset_final < 1)  offset_final <- 1
       if (offset_final > ws) offset_final <- ws
-      
+
       data.frame(
         window_size        = ws,
         start              = s0,
@@ -115,19 +128,19 @@ extract_all_windows_RecSeq <- function(
         stringsAsFactors   = FALSE
       )
     })
-    
+
     df_ws <- do.call(rbind, row_list)
     results[[as.character(ws)]] <- df_ws
   }
-  
+
   methylasensitive_window <- do.call(rbind, results)
   rownames(methylasensitive_window) <- NULL
   methylasensitive_window$direction <- direction
   methylasensitive_window$mod_type  <- mod_type
-  
+
   assign("methylasensitive_window", methylasensitive_window, envir = .GlobalEnv)
-  
+
   results <- list() # Reset results after assigning the final result
-  
+
   return(methylasensitive_window)
 }

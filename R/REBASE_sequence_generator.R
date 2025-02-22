@@ -1,102 +1,122 @@
-#' Ambiguous DNA values for nucleotide matching.
+#' Ambiguous DNA values for nucleotide matching
 #'
-#' A list mapping each nucleotide (or ambiguous code) to the set of acceptable bases.
+#' @description
+#' A list mapping each nucleotide (or ambiguous IUPAC code) to its possible base representations.
 #'
-#' @return A list where each element is a string of acceptable bases.
+#' @return A named list where each element is a string of acceptable bases.
 #'
 #' @examples
-#' ambiguous_dna_values$N  # "ACGT"
+#' ambiguous_dna_values$N  # returns "ACGT"
+#'
+#' @export
 ambiguous_dna_values <- list(
-  A = "A",
-  C = "C",
-  G = "G",
-  T = "T",
-  M = "AC",
-  R = "AG",
-  W = "AT",
-  S = "CG",
-  Y = "CT",
-  K = "GT",
-  V = "ACG",
-  H = "ACT",
-  D = "AGT",
-  B = "CGT",
-  N = "ACGT"
+  A = "A", C = "C", G = "G", T = "T",
+  M = "AC", R = "AG", W = "AT", S = "CG",
+  Y = "CT", K = "GT", V = "ACG", H = "ACT",
+  D = "AGT", B = "CGT", N = "ACGT"
 )
 
-#########################################################################
-#' Reverse complement helper for uppercase A/T/G/C.
+#' Check ambiguous match between two sequences
+#'
+#' @description
+#' This function checks whether two sequences match ambiguously based on IUPAC nucleotide codes.
+#'
+#' @param seq1 A character string representing the first DNA sequence.
+#' @param seq2 A character string representing the second DNA sequence.
+#'
+#' @return Logical value (`TRUE` or `FALSE`) indicating if the sequences match ambiguously.
+#'
+#' @examples
+#' ambiguous_match("A", "M") # TRUE (M represents A or C)
+#' ambiguous_match("T", "G") # FALSE
+#'
+#' @export
+ambiguous_match <- function(seq1, seq2) {
+  if (nchar(seq1) != nchar(seq2)) return(FALSE)
+
+  for (i in seq_len(nchar(seq1))) {
+    char1 <- substr(seq1, i, i)
+    char2 <- substr(seq2, i, i)
+
+    allowed1 <- ambiguous_dna_values[[char1]] %||% char1
+    allowed2 <- ambiguous_dna_values[[char2]] %||% char2
+
+    if (!any(strsplit(allowed1, "")[[1]] %in% strsplit(allowed2, "")[[1]])) {
+      return(FALSE)
+    }
+  }
+  return(TRUE)
+}
+
+#' Reverse complement of a DNA sequence
+#'
+#' @description
+#' Computes the reverse complement of a DNA sequence considering IUPAC nucleotide codes.
 #'
 #' @param dna A character string representing a DNA sequence.
 #'
-#' @return The reverse complement of \code{dna}.
+#' @return A character string representing the reverse complement of the input sequence.
 #'
 #' @examples
-#' rev_comp("ATGC")  # returns "GCAT"
+#' rev_comp("ATGC") # returns "GCAT"
 #'
 #' @export
 rev_comp <- function(dna) {
-  # IUPAC 코드 변환 테이블 (1:1 치환)
   iupac_complement <- c(
     "A" = "T", "T" = "A", "G" = "C", "C" = "G",
     "R" = "Y", "Y" = "R", "S" = "S", "W" = "W",
     "K" = "M", "M" = "K", "B" = "V", "V" = "B",
     "D" = "H", "H" = "D", "N" = "N"
   )
-
-  # 서열 뒤집기
   rev_dna <- rev(strsplit(dna, "")[[1]])
-
-  # Reverse Complement 변환 적용
   dna_rc <- sapply(rev_dna, function(base) iupac_complement[base])
-
-  # 문자열로 반환
-  return(paste0(dna_rc, collapse=""))
+  return(paste0(dna_rc, collapse = ""))
 }
 
-#########################################################################
-#' Find the longest overlap between two strings with ambiguous matching.
+#' Find the longest overlap between two strings with ambiguous matching
 #'
-#' @description
-#' For two input strings \code{a} and \code{b}, this function finds the length of
-#' the largest suffix of \code{a} that is also a prefix of \code{b}. Ambiguous nucleotides
-#' are matched according to the values in \code{ambiguous_dna_values}. If either string is
-#' \code{NA} or empty, the function returns 0.
-#'
-#' @param a A character string.
-#' @param b A character string.
-#'
+#' @param a A character string (mod_containing_seq).
+#' @param b A character string (forward_RecSeq).
+#' @param mod_position Integer. The 1-based position of the modification in `a`.
 #' @return An integer representing the length of the longest overlap.
-#'
 #' @examples
-#' longest_overlap("GAA", "AAGT")  # returns 2 because "AA" overlaps.
-#'
+#' longest_overlap("CGAAN", "GAAGA", 4)  # returns 2 (AA와 GA 오버랩)
 #' @importFrom stringr str_detect fixed
 #' @export
-longest_overlap <- function(a, b) {
+longest_overlap <- function(a, b, mod_position) {
   a <- trimws(a)
   b <- trimws(b)
-  if (is.na(a) || is.na(b) || a == "" || b == "") {
+  if (is.na(a) || is.na(b) || a == "" || b == "" || is.na(mod_position)) {
     return(0)
   }
+
+  # 끝의 연속적인 N 제외
+  a_chars <- strsplit(a, "")[[1]]
+  trailing_N_count <- 0
+  for (i in rev(seq_along(a_chars))) {
+    if (a_chars[i] == "N") {
+      trailing_N_count <- trailing_N_count + 1
+    } else {
+      break
+    }
+  }
+  a_no_trailing_N <- substr(a, 1, nchar(a) - trailing_N_count)
+  mod_position_adjusted <- min(mod_position, nchar(a_no_trailing_N))
+
   max_len <- 0
-  limit <- min(nchar(a), nchar(b))
+  limit <- min(nchar(a_no_trailing_N), nchar(b))
+
   for (k in seq_len(limit)) {
     overlap_match <- TRUE
     for (i in seq_len(k)) {
-      char_a <- substr(a, nchar(a) - k + i, nchar(a) - k + i)
+      char_a <- substr(a_no_trailing_N, nchar(a_no_trailing_N) - k + i, nchar(a_no_trailing_N) - k + i)
       char_b <- substr(b, i, i)
       char_a <- toupper(char_a)
       char_b <- toupper(char_b)
 
-      if (is.na(char_a) || is.na(char_b)) {
-        overlap_match <- FALSE
-        break
-      }
-
       allowed_a <- ambiguous_dna_values[[char_a]]
-      if (is.null(allowed_a)) allowed_a <- char_a
       allowed_b <- ambiguous_dna_values[[char_b]]
+      if (is.null(allowed_a)) allowed_a <- char_a
       if (is.null(allowed_b)) allowed_b <- char_b
 
       if (!(stringr::str_detect(allowed_a, stringr::fixed(char_b)) ||
@@ -106,74 +126,167 @@ longest_overlap <- function(a, b) {
       }
     }
     if (overlap_match) {
-      max_len <- k
+      overlap_start_in_a <- nchar(a_no_trailing_N) - k + 1
+      if (overlap_start_in_a <= mod_position_adjusted) {
+        max_len <- k
+      }
     }
   }
   return(max_len)
 }
 
-#########################################################################
-#' Concatenate two strings by removing duplicated ambiguous overlap.
+#' Concatenate two strings by removing duplicated ambiguous overlap
 #'
-#' @description
-#' Given two strings \code{a} and \code{b}, this function uses \code{longest_overlap()}
-#' to determine the length of the overlapping region between the suffix of \code{a} and
-#' the prefix of \code{b} (with ambiguous nucleotide matching). It then concatenates
-#' \code{a} with the remainder of \code{b} after the overlap.
-#'
-#' @param a A character string.
-#' @param b A character string.
-#'
+#' @param a Character string (mod_containing_seq).
+#' @param b Character string (forward_RecSeq).
+#' @param mod_position Integer. The 1-based position of the modification in `a`.
 #' @return A concatenated character string.
-#'
 #' @examples
-#' concat_with_overlap("GAA", "AAGT")  # returns "GAAGT"
-#'
+#' concat_with_overlap("CGAAN", "GAAGA", 4)  # returns "CGAAGA"
 #' @export
-concat_with_overlap <- function(a, b) {
-  k <- longest_overlap(a, b)
+concat_with_overlap <- function(a, b, mod_position) {
+  k <- longest_overlap(a, b, mod_position)
   if (k == 0) {
     return(paste0(a, b))
-  } else {
-    return(paste0(a, substr(b, k+1, nchar(b))))
   }
+
+  # 끝의 N 제외한 a의 유효 부분
+  a_chars <- strsplit(a, "")[[1]]
+  trailing_N_count <- 0
+  for (i in rev(seq_along(a_chars))) {
+    if (a_chars[i] == "N") {
+      trailing_N_count <- trailing_N_count + 1
+    } else {
+      break
+    }
+  }
+  a_no_trailing_N <- substr(a, 1, nchar(a) - trailing_N_count)
+
+  # 오버랩 부분 추출
+  overlap_a <- substr(a_no_trailing_N, nchar(a_no_trailing_N) - k + 1, nchar(a_no_trailing_N))
+  overlap_b <- substr(b, 1, k)
+
+  resolved_overlap <- ""
+  for (i in 1:k) {
+    char_a <- substr(overlap_a, i, i)
+    char_b <- substr(overlap_b, i, i)
+    allowed_a <- ambiguous_dna_values[[char_a]]
+    if (is.null(allowed_a)) allowed_a <- char_a
+
+    if (char_b %in% strsplit(allowed_a, "")[[1]]) {
+      resolved_overlap <- paste0(resolved_overlap, char_b)
+    } else {
+      resolved_overlap <- paste0(resolved_overlap, char_a)
+    }
+  }
+
+  pre_overlap <- substr(a_no_trailing_N, 1, nchar(a_no_trailing_N) - k)
+  post_overlap <- substr(b, k + 1, nchar(b))
+  return(paste0(pre_overlap, resolved_overlap, post_overlap))
 }
 
-#########################################################################
+#' Filter methylation sensitivity data for blocked enzymes
+#'
+#' @description
+#' Filters methylation sensitivity data to retain only enzymes whose cleavage is blocked.
+#'
+#' @param methylation_sensitivity A data frame from REBASE containing enzyme information.
+#'
+#' @return A filtered data frame with only blocked enzymes.
+#'
+#' @examples
+#' df_blocked <- filter_meth_blocked(methylation_sensitivity)
+#'
+#' @export
 filter_meth_blocked <- function(methylation_sensitivity) {
   methylation_sensitivity %>%
     dplyr::filter(cleavage == "blocked")
 }
 
+#' Filter methylation sensitivity data by modification type
+#'
+#' @description
+#' Filters methylation sensitivity data based on the specified modification type.
+#'
+#' @param methylation_sensitivity A data frame from REBASE containing enzyme information.
+#' @param mod_type A character string specifying the modification type (e.g., "4mC").
+#'
+#' @return A filtered data frame containing only enzymes with the specified modification type.
+#'
+#' @examples
+#' df_filtered <- filter_meth_by_mod_type(methylation_sensitivity, "4mC")
+#'
+#' @export
 filter_meth_by_mod_type <- function(methylation_sensitivity, mod_type) {
   methylation_sensitivity %>%
     dplyr::filter(modification == mod_type)
 }
 
+#' Cross join and filter NA values
+#'
+#' @description
+#' Performs a cross join between two data frames and removes rows with NA values in key columns.
+#'
+#' @param df_filtered A data frame containing sequence windows.
+#' @param df_meth_blocked A data frame containing blocked enzyme data.
+#'
+#' @return A data frame with cross-joined data and removed NA values.
+#'
+#' @examples
+#' df_joined <- cross_join_and_filter_na(df_filtered, df_meth_blocked)
+#'
+#' @importFrom tidyr crossing
+#' @importFrom dplyr filter
+#' @export
 cross_join_and_filter_na <- function(df_filtered, df_meth_blocked) {
   tidyr::crossing(df_filtered, df_meth_blocked) %>%
     dplyr::filter(!is.na(mod_containing_seq) & !is.na(forward_RecSeq))
 }
 
+#' Check if modification position is within the overlap region
+#'
+#' @description
+#' Determines whether the modification position falls within the overlap region between two sequences.
+#'
+#' @param context A character string representing the modification-containing sequence.
+#' @param forward_RecSeq A character string representing the recognition sequence.
+#' @param mod_position An integer representing the modification position in `context`.
+#' @param overlap_len An integer indicating the length of the overlap.
+#'
+#' @return A logical value (`TRUE` or `FALSE`) indicating whether the modification position is within the overlap region.
+#'
+#' @examples
+#' check_mod_position_in_overlap("CCWGG", "CCAGG", 2, 3)
+#'
+#' @export
 check_mod_position_in_overlap <- function(context, forward_RecSeq, mod_position, overlap_len) {
-  if (is.na(overlap_len) || overlap_len == 0 || is.na(mod_position)) {
+  if (is.na(overlap_len) || is.na(mod_position) || overlap_len == 0) {
     return(FALSE)
   }
-  if (mod_position <= overlap_len) {
-    return(TRUE)
-  } else {
-    return(FALSE)
-  }
+  overlap_start_in_context <- nchar(context) - overlap_len + 1
+  return(mod_position >= overlap_start_in_context && mod_position <= nchar(context))
 }
 
+#' Find intersection between concatenated sequence and target sequence
+#'
+#' @description
+#' Identifies the longest matching substring between a concatenated recognition sequence and a target sequence.
+#'
+#' @param concatenated_RecSeq A character string representing the concatenated recognition sequence.
+#' @param target_seq A character string representing the target sequence.
+#'
+#' @return The longest matching substring or `NA` if no match is found.
+#'
+#' @examples
+#' find_intersection_in_target("CCWGG", "CCAGG")
+#'
+#' @export
 find_intersection_in_target <- function(concatenated_RecSeq, target_seq) {
   if (is.na(concatenated_RecSeq) || is.na(target_seq)) {
     return(NA_character_)
   }
-
   L_rec <- nchar(concatenated_RecSeq)
   L_tar <- nchar(target_seq)
-
   for (len in L_rec:1) {
     for (start in 1:(L_rec - len + 1)) {
       candidate <- substr(concatenated_RecSeq, start, start + len - 1)
@@ -182,108 +295,56 @@ find_intersection_in_target <- function(concatenated_RecSeq, target_seq) {
       }
     }
   }
-
   return(NA_character_)
 }
 
-check_mod_context_in_target <- function(concatenated_RecSeq, target_seq, mod_position) {
-  if (is.na(concatenated_RecSeq) || is.na(target_seq) || is.na(mod_position)) {
-    return(NA_character_)
-  }
-
-  L_rec <- nchar(concatenated_RecSeq)
-  L_tar <- nchar(target_seq)
-
-  if (mod_position > L_rec) {
-    return(NA_character_)
-  }
-
-  # mod_position 기준 최소 5bp 앞뒤 확보해서 context 만들어보자
-  context_window_size <- 5
-  start_pos <- max(1, mod_position - (context_window_size - 1))
-  end_pos <- min(L_rec, mod_position + (context_window_size - 1))
-  mod_context <- substr(concatenated_RecSeq, start_pos, end_pos)
-
-  # 이제 target_seq에 mod_context가 ambiguous하게 포함되는지 본다.
-  L_context <- nchar(mod_context)
-
-  for (tar_start in 1:(L_tar - L_context + 1)) {
-    target_window <- substr(target_seq, tar_start, tar_start + L_context - 1)
-
-    if (ambiguous_match(mod_context, target_window)) {
-      # 매칭된다면 확장 서열 만들어서 반환
-      left_part <- substr(target_seq, 1, tar_start - 1)
-      right_part <- substr(target_seq, tar_start + L_context, L_tar)
-      return(paste0(left_part, mod_context, right_part))
-    }
-  }
-
-  return(NA_character_)
-}
-
-ambiguous_match <- function(seq1, seq2) {
-  if (nchar(seq1) != nchar(seq2)) {
-    return(FALSE)
-  }
-
-  for (i in seq_len(nchar(seq1))) {
-    char1 <- substr(seq1, i, i)
-    char2 <- substr(seq2, i, i)
-
-    allowed1 <- ambiguous_dna_values[[char1]]
-    allowed2 <- ambiguous_dna_values[[char2]]
-
-    if (is.null(allowed1)) allowed1 <- char1
-    if (is.null(allowed2)) allowed2 <- char2
-
-    if (char1 == "N") allowed1 <- "ACGT"
-    if (char2 == "N") allowed2 <- "ACGT"
-
-    set1 <- strsplit(allowed1, "")[[1]]
-    set2 <- strsplit(allowed2, "")[[1]]
-
-    if (length(intersect(set1, set2)) == 0) {
-      return(FALSE)
-    }
-  }
-
-  return(TRUE)
-}
-
+#' Check if extended sequence fully matches target sequence
+#'
+#' @description
+#' Compares an extended sequence with a target sequence, considering ambiguous nucleotide matching.
+#'
+#' @param extended_seq A character string representing the extended sequence.
+#' @param target_seq A character string representing the target sequence.
+#'
+#' @return A logical value (`TRUE` or `FALSE`) indicating whether the sequences match fully.
+#'
+#' @examples
+#' check_full_extended_match("CCWGG", "CCAGG")
+#'
+#' @export
 check_full_extended_match <- function(extended_seq, target_seq) {
   if (nchar(extended_seq) != nchar(target_seq)) {
     return(FALSE)
   }
-
   for (i in seq_len(nchar(extended_seq))) {
-    char_ext <- toupper(substr(extended_seq, i, i))
-    char_tar <- toupper(substr(target_seq, i, i))
-
+    char_ext <- substr(extended_seq, i, i)
+    char_tar <- substr(target_seq, i, i)
     allowed_ext <- ambiguous_dna_values[[char_ext]]
     allowed_tar <- ambiguous_dna_values[[char_tar]]
-
     if (is.null(allowed_ext)) allowed_ext <- char_ext
     if (is.null(allowed_tar)) allowed_tar <- char_tar
-
-    if (char_ext == "N") allowed_ext <- "ACGT"
-    if (char_tar == "N") allowed_tar <- "ACGT"
-
     set_ext <- strsplit(allowed_ext, "")[[1]]
     set_tar <- strsplit(allowed_tar, "")[[1]]
-
     if (length(intersect(set_ext, set_tar)) == 0) {
-      cat(sprintf(
-        "Mismatch at position %d: %s(%s) vs %s(%s)\n",
-        i, char_ext, allowed_ext, char_tar, allowed_tar
-      ))
-      cat(sprintf("Extended_seq: %s\nTarget_seq:   %s\n\n", extended_seq, target_seq))
       return(FALSE)
     }
   }
-
   return(TRUE)
 }
 
+#' Extend sequence to match target sequence and filter
+#'
+#' @param df_out Data frame with concatenated sequences.
+#' @param target_seq Character string representing the target DNA sequence.
+#'
+#' @return Filtered data frame with extended sequences.
+#'
+#' @examples
+#' df_extended <- extend_with_target_seq_and_filter(df_out, "CCWGG")
+#'
+#' @importFrom dplyr mutate filter
+#' @importFrom purrr pmap_chr
+#' @export
 extend_with_target_seq_and_filter <- function(df_out, target_seq) {
   df_out %>%
     dplyr::mutate(
@@ -293,24 +354,10 @@ extend_with_target_seq_and_filter <- function(df_out, target_seq) {
           if (is.na(seq) || is.na(mod_pos)) {
             return(NA_character_)
           }
-
-          # mod_position이 concatenated_RecSeq 내에서 어디 있는지 찾는다
-          mod_pos_in_concat <- nchar(forward_seq) - (nchar(seq) - mod_pos)
-
-          if (mod_pos_in_concat <= 0 || mod_pos_in_concat > nchar(seq)) {
-            return(NA_character_)
-          }
-
-          # concatenated_RecSeq와 target_seq 오버랩을 고려해서 확장한 최종 시퀀스를 만든다.
           extended <- extend_to_target_seq(seq, target_seq)
-
-          if (!is.na(extended)) {
-            # 확장된 것이 target_seq와 ambiguous하게 완전히 일치하는지 본다.
-            if (check_full_extended_match(extended, target_seq)) {
-              return(extended)
-            }
+          if (!is.na(extended) && check_full_extended_match(extended, target_seq)) {
+            return(extended)
           }
-
           return(NA_character_)
         }
       )
@@ -318,13 +365,24 @@ extend_with_target_seq_and_filter <- function(df_out, target_seq) {
     dplyr::filter(!is.na(extended_seq))
 }
 
+#' Extend concatenated sequence to target sequence
+#'
+#' @description
+#' Extends a concatenated recognition sequence to match the target sequence using ambiguous nucleotide matching.
+#'
+#' @param concatenated_RecSeq A character string representing the concatenated recognition sequence.
+#' @param target_seq A character string representing the target DNA sequence.
+#'
+#' @return A character string representing the extended sequence or `NA` if no extension is possible.
+#'
+#' @examples
+#' extend_to_target_seq("CCWGG", "CCAGG")
+#'
+#' @export
 extend_to_target_seq <- function(concatenated_RecSeq, target_seq) {
   L_concat <- nchar(concatenated_RecSeq)
   L_target <- nchar(target_seq)
-
-  # 1. concatenated_RecSeq의 끝과 target_seq의 앞부분이 어디까지 겹칠 수 있는지 찾는다.
   max_overlap_len <- 0
-
   for (k in seq_len(min(L_concat, L_target))) {
     if (ambiguous_match(
       substr(concatenated_RecSeq, L_concat - k + 1, L_concat),
@@ -333,31 +391,40 @@ extend_to_target_seq <- function(concatenated_RecSeq, target_seq) {
       max_overlap_len <- k
     }
   }
-
   if (max_overlap_len == 0) {
     return(NA_character_)
   }
-
-  # 2. 겹친 부분을 기준으로 확장된 서열 만든다.
   extended_seq <- paste0(
     concatenated_RecSeq,
     substr(target_seq, max_overlap_len + 1, L_target)
   )
-
   return(extended_seq)
 }
 
+#' Match enzyme sequences with target sequence
+#'
+#' @param mod_type Character string (e.g., "4mC").
+#' @param target_seq Character string (target DNA sequence).
+#' @return Data frame with matched enzyme sequences.
+#' @importFrom dplyr mutate filter
+#' @importFrom purrr pmap_int pmap_chr pmap_lgl map_chr
+#' @export
 
 match_enzyme_sequences <- function(mod_type, target_seq) {
   df_meth_blocked <- filter_meth_blocked(methylation_sensitivity)
   df_meth_filtered <- filter_meth_by_mod_type(df_meth_blocked, mod_type)
-
   df_joined <- cross_join_and_filter_na(methylasensitive_window, df_meth_filtered)
 
   df_out <- df_joined %>%
     dplyr::mutate(
-      overlap_len = purrr::map2_int(mod_containing_seq, forward_RecSeq, longest_overlap),
-      concatenated_RecSeq = purrr::map2_chr(mod_containing_seq, forward_RecSeq, concat_with_overlap),
+      overlap_len = purrr::pmap_int(
+        list(mod_containing_seq, forward_RecSeq, mod_position),
+        longest_overlap
+      ),
+      concatenated_RecSeq = purrr::pmap_chr(
+        list(mod_containing_seq, forward_RecSeq, mod_position),
+        concat_with_overlap
+      ),
       mod_in_overlap = purrr::pmap_lgl(
         list(mod_containing_seq, forward_RecSeq, mod_position, overlap_len),
         check_mod_position_in_overlap
@@ -366,7 +433,5 @@ match_enzyme_sequences <- function(mod_type, target_seq) {
     dplyr::filter(mod_in_overlap)
 
   result_df <<- extend_with_target_seq_and_filter(df_out, target_seq)
-
   return(result_df)
 }
-

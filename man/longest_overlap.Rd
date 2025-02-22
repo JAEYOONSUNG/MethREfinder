@@ -2,25 +2,23 @@
 % Please edit documentation in R/REBASE_sequence_generator.R
 \name{longest_overlap}
 \alias{longest_overlap}
-\title{Find the longest overlap between two strings with ambiguous matching.}
+\title{Find the longest overlap between two strings with ambiguous matching}
 \usage{
-longest_overlap(a, b)
+longest_overlap(a, b, mod_position)
 }
 \arguments{
-\item{a}{A character string.}
+\item{a}{A character string (mod_containing_seq).}
 
-\item{b}{A character string.}
+\item{b}{A character string (forward_RecSeq).}
+
+\item{mod_position}{Integer. The 1-based position of the modification in \code{a}.}
 }
 \value{
 An integer representing the length of the longest overlap.
 }
 \description{
-For two input strings \code{a} and \code{b}, this function finds the length of
-the largest suffix of \code{a} that is also a prefix of \code{b}. Ambiguous nucleotides
-are matched according to the values in \code{ambiguous_dna_values}. If either string is
-\code{NA} or empty, the function returns 0.
+Find the longest overlap between two strings with ambiguous matching
 }
 \examples{
-longest_overlap("GAA", "AAGT")  # returns 2 because "AA" overlaps.
-
+longest_overlap("CGAAN", "GAAGA", 4)  # returns 2 (AA와 GA 오버랩)
 }

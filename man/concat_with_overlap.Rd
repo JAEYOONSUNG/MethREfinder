@@ -2,25 +2,23 @@
 % Please edit documentation in R/REBASE_sequence_generator.R
 \name{concat_with_overlap}
 \alias{concat_with_overlap}
-\title{Concatenate two strings by removing duplicated ambiguous overlap.}
+\title{Concatenate two strings by removing duplicated ambiguous overlap}
 \usage{
-concat_with_overlap(a, b)
+concat_with_overlap(a, b, mod_position)
 }
 \arguments{
-\item{a}{A character string.}
+\item{a}{Character string (mod_containing_seq).}
 
-\item{b}{A character string.}
+\item{b}{Character string (forward_RecSeq).}
+
+\item{mod_position}{Integer. The 1-based position of the modification in \code{a}.}
 }
 \value{
 A concatenated character string.
 }
 \description{
-Given two strings \code{a} and \code{b}, this function uses \code{longest_overlap()}
-to determine the length of the overlapping region between the suffix of \code{a} and
-the prefix of \code{b} (with ambiguous nucleotide matching). It then concatenates
-\code{a} with the remainder of \code{b} after the overlap.
+Concatenate two strings by removing duplicated ambiguous overlap
 }
 \examples{
-concat_with_overlap("GAA", "AAGT")  # returns "GAAGT"
-
+concat_with_overlap("CGAAN", "GAAGA", 4)  # returns "CGAAGA"
 }

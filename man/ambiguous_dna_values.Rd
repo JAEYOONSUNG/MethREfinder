@@ -3,7 +3,7 @@
 \docType{data}
 \name{ambiguous_dna_values}
 \alias{ambiguous_dna_values}
-\title{Ambiguous DNA values for nucleotide matching.}
+\title{Ambiguous DNA values for nucleotide matching}
 \format{
 An object of class \code{list} of length 15.
 }
@@ -11,12 +11,13 @@ An object of class \code{list} of length 15.
 ambiguous_dna_values
 }
 \value{
-A list where each element is a string of acceptable bases.
+A named list where each element is a string of acceptable bases.
 }
 \description{
-A list mapping each nucleotide (or ambiguous code) to the set of acceptable bases.
+A list mapping each nucleotide (or ambiguous IUPAC code) to its possible base representations.
 }
 \examples{
-ambiguous_dna_values$N  # "ACGT"
+ambiguous_dna_values$N  # returns "ACGT"
+
 }
 \keyword{datasets}

@@ -2,7 +2,7 @@
 % Please edit documentation in R/REBASE_sequence_generator.R
 \name{rev_comp}
 \alias{rev_comp}
-\title{Reverse complement helper for uppercase A/T/G/C.}
+\title{Reverse complement of a DNA sequence}
 \usage{
 rev_comp(dna)
 }
@@ -10,12 +10,12 @@ rev_comp(dna)
 \item{dna}{A character string representing a DNA sequence.}
 }
 \value{
-The reverse complement of \code{dna}.
+A character string representing the reverse complement of the input sequence.
 }
 \description{
-Reverse complement helper for uppercase A/T/G/C.
+Computes the reverse complement of a DNA sequence considering IUPAC nucleotide codes.
 }
 \examples{
-rev_comp("ATGC")  # returns "GCAT"
+rev_comp("ATGC") # returns "GCAT"
 
 }

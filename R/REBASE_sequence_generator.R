@@ -16,6 +16,15 @@ ambiguous_dna_values <- list(
   D = "AGT", B = "CGT", N = "ACGT"
 )
 
+#' Null coalescing operator
+#' @param x First value
+#' @param y Default value if x is NULL
+#' @return x if not NULL, otherwise y
+#' @keywords internal
+`%||%` <- function(x, y) {
+  if (is.null(x)) y else x
+}
+
 #' Check ambiguous match between two sequences
 #'
 #' @description
@@ -77,16 +86,16 @@ rev_comp <- function(dna) {
 #'
 #' @param a A character string (mod_containing_seq).
 #' @param b A character string (forward_RecSeq).
-#' @param mod_position Integer. The 1-based position of the modification in `a`.
+#' @param mod_pos Integer. The 1-based position of the modification in window `a`.
 #' @return An integer representing the length of the longest overlap.
 #' @examples
 #' longest_overlap("CGAAN", "GAAGA", 4)  # returns 2 (AA와 GA 오버랩)
 #' @importFrom stringr str_detect fixed
 #' @export
-longest_overlap <- function(a, b, mod_position) {
+longest_overlap <- function(a, b, mod_pos) {
   a <- trimws(a)
   b <- trimws(b)
-  if (is.na(a) || is.na(b) || a == "" || b == "" || is.na(mod_position)) {
+  if (is.na(a) || is.na(b) || a == "" || b == "" || is.na(mod_pos)) {
     return(0)
   }
 
@@ -101,7 +110,7 @@ longest_overlap <- function(a, b, mod_position) {
     }
   }
   a_no_trailing_N <- substr(a, 1, nchar(a) - trailing_N_count)
-  mod_position_adjusted <- min(mod_position, nchar(a_no_trailing_N))
+  mod_pos_adjusted <- min(mod_pos, nchar(a_no_trailing_N))
 
   max_len <- 0
   limit <- min(nchar(a_no_trailing_N), nchar(b))
@@ -119,15 +128,17 @@ longest_overlap <- function(a, b, mod_position) {
       if (is.null(allowed_a)) allowed_a <- char_a
       if (is.null(allowed_b)) allowed_b <- char_b
 
-      if (!(stringr::str_detect(allowed_a, stringr::fixed(char_b)) ||
-            stringr::str_detect(allowed_b, stringr::fixed(char_a)))) {
+      # Check if there's any overlap between allowed bases
+      set_a <- strsplit(allowed_a, "")[[1]]
+      set_b <- strsplit(allowed_b, "")[[1]]
+      if (length(intersect(set_a, set_b)) == 0) {
         overlap_match <- FALSE
         break
       }
     }
     if (overlap_match) {
       overlap_start_in_a <- nchar(a_no_trailing_N) - k + 1
-      if (overlap_start_in_a <= mod_position_adjusted) {
+      if (overlap_start_in_a <= mod_pos_adjusted) {
         max_len <- k
       }
     }
@@ -139,13 +150,13 @@ longest_overlap <- function(a, b, mod_position) {
 #'
 #' @param a Character string (mod_containing_seq).
 #' @param b Character string (forward_RecSeq).
-#' @param mod_position Integer. The 1-based position of the modification in `a`.
+#' @param mod_pos Integer. The 1-based position of the modification in window `a`.
 #' @return A concatenated character string.
 #' @examples
 #' concat_with_overlap("CGAAN", "GAAGA", 4)  # returns "CGAAGA"
 #' @export
-concat_with_overlap <- function(a, b, mod_position) {
-  k <- longest_overlap(a, b, mod_position)
+concat_with_overlap <- function(a, b, mod_pos) {
+  k <- longest_overlap(a, b, mod_pos)
   if (k == 0) {
     return(paste0(a, b))
   }
@@ -250,7 +261,7 @@ cross_join_and_filter_na <- function(df_filtered, df_meth_blocked) {
 #'
 #' @param context A character string representing the modification-containing sequence.
 #' @param forward_RecSeq A character string representing the recognition sequence.
-#' @param mod_position An integer representing the modification position in `context`.
+#' @param mod_pos An integer representing the modification position in the window `context`.
 #' @param overlap_len An integer indicating the length of the overlap.
 #'
 #' @return A logical value (`TRUE` or `FALSE`) indicating whether the modification position is within the overlap region.
@@ -259,12 +270,12 @@ cross_join_and_filter_na <- function(df_filtered, df_meth_blocked) {
 #' check_mod_position_in_overlap("CCWGG", "CCAGG", 2, 3)
 #'
 #' @export
-check_mod_position_in_overlap <- function(context, forward_RecSeq, mod_position, overlap_len) {
-  if (is.na(overlap_len) || is.na(mod_position) || overlap_len == 0) {
+check_mod_position_in_overlap <- function(context, forward_RecSeq, mod_pos, overlap_len) {
+  if (is.na(overlap_len) || is.na(mod_pos) || overlap_len == 0) {
     return(FALSE)
   }
   overlap_start_in_context <- nchar(context) - overlap_len + 1
-  return(mod_position >= overlap_start_in_context && mod_position <= nchar(context))
+  return(mod_pos >= overlap_start_in_context && mod_pos <= nchar(context))
 }
 
 #' Find intersection between concatenated sequence and target sequence
@@ -349,9 +360,9 @@ extend_with_target_seq_and_filter <- function(df_out, target_seq) {
   df_out %>%
     dplyr::mutate(
       extended_seq = purrr::pmap_chr(
-        list(concatenated_RecSeq, mod_position, forward_RecSeq),
-        function(seq, mod_pos, forward_seq) {
-          if (is.na(seq) || is.na(mod_pos)) {
+        list(concatenated_RecSeq, mod_pos, forward_RecSeq),
+        function(seq, mod_pos_val, forward_seq) {
+          if (is.na(seq) || is.na(mod_pos_val)) {
             return(NA_character_)
           }
           extended <- extend_to_target_seq(seq, target_seq)
@@ -403,30 +414,40 @@ extend_to_target_seq <- function(concatenated_RecSeq, target_seq) {
 
 #' Match enzyme sequences with target sequence
 #'
-#' @param mod_type Character string (e.g., "4mC").
+#' @description
+#' Main function to match enzymes against a target sequence.
+#' Cross joins windows with REBASE data, then finds overlaps and extends to target sequence.
+#' Uses mod_pos (window's modification position) for overlap calculation.
+#'
+#' @param mod_type Character string (e.g., "4mC", "5mC", "6mA").
 #' @param target_seq Character string (target DNA sequence).
 #' @return Data frame with matched enzyme sequences.
 #' @importFrom dplyr mutate filter
-#' @importFrom purrr pmap_int pmap_chr pmap_lgl map_chr
+#' @importFrom purrr pmap_int pmap_chr pmap_lgl
 #' @export
-
 match_enzyme_sequences <- function(mod_type, target_seq) {
   df_meth_blocked <- filter_meth_blocked(methylation_sensitivity)
   df_meth_filtered <- filter_meth_by_mod_type(df_meth_blocked, mod_type)
   df_joined <- cross_join_and_filter_na(methylasensitive_window, df_meth_filtered)
 
+  # KEY FILTER: window의 mod_pos와 REBASE의 mod_position이 일치해야 함
+  df_joined <- df_joined %>%
+    dplyr::filter(mod_pos == mod_position)
+
   df_out <- df_joined %>%
     dplyr::mutate(
+      # mod_pos (window의 modification position) 사용
       overlap_len = purrr::pmap_int(
-        list(mod_containing_seq, forward_RecSeq, mod_position),
+        list(mod_containing_seq, forward_RecSeq, mod_pos),
         longest_overlap
       ),
       concatenated_RecSeq = purrr::pmap_chr(
-        list(mod_containing_seq, forward_RecSeq, mod_position),
+        list(mod_containing_seq, forward_RecSeq, mod_pos),
         concat_with_overlap
       ),
+      # mod_pos (window의 modification position) 사용
       mod_in_overlap = purrr::pmap_lgl(
-        list(mod_containing_seq, forward_RecSeq, mod_position, overlap_len),
+        list(mod_containing_seq, forward_RecSeq, mod_pos, overlap_len),
         check_mod_position_in_overlap
       )
     ) %>%

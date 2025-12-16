@@ -55,7 +55,7 @@ longest_overlap_forward <- function(window, recseq, mod_pos) {
   if (is.na(window) || is.na(recseq) || window == "" || recseq == "" || is.na(mod_pos)) {
     return(0)
   }
-  
+
   # Remove trailing N from window
   w_chars <- strsplit(window, "")[[1]]
   trailing_N <- 0
@@ -65,15 +65,15 @@ longest_overlap_forward <- function(window, recseq, mod_pos) {
   }
   w_clean <- substr(window, 1, nchar(window) - trailing_N)
   if (nchar(w_clean) == 0) return(0)
-  
+
   mod_pos_adj <- min(mod_pos, nchar(w_clean))
   max_len <- 0
   limit <- min(nchar(w_clean), nchar(recseq))
-  
+
   for (k in seq_len(limit)) {
     w_suffix <- substr(w_clean, nchar(w_clean) - k + 1, nchar(w_clean))
     r_prefix <- substr(recseq, 1, k)
-    
+
     if (ambiguous_match(w_suffix, r_prefix)) {
       overlap_start <- nchar(w_clean) - k + 1
       if (overlap_start <= mod_pos_adj) {
@@ -89,7 +89,7 @@ longest_overlap_forward <- function(window, recseq, mod_pos) {
 concat_forward <- function(window, recseq, mod_pos) {
   k <- longest_overlap_forward(window, recseq, mod_pos)
   if (k == 0) return(NA_character_)
-  
+
   # Remove trailing N
   w_chars <- strsplit(window, "")[[1]]
   trailing_N <- 0
@@ -98,11 +98,11 @@ concat_forward <- function(window, recseq, mod_pos) {
     else break
   }
   w_clean <- substr(window, 1, nchar(window) - trailing_N)
-  
+
   # Resolve overlap (prefer more specific base)
   w_suffix <- substr(w_clean, nchar(w_clean) - k + 1, nchar(w_clean))
   r_prefix <- substr(recseq, 1, k)
-  
+
   resolved <- ""
   for (i in 1:k) {
     cw <- substr(w_suffix, i, i)
@@ -114,7 +114,7 @@ concat_forward <- function(window, recseq, mod_pos) {
       resolved <- paste0(resolved, cw)
     }
   }
-  
+
   pre <- substr(w_clean, 1, nchar(w_clean) - k)
   post <- substr(recseq, k + 1, nchar(recseq))
   return(paste0(pre, resolved, post))
@@ -132,7 +132,7 @@ longest_overlap_backward <- function(window, recseq, mod_pos) {
   if (is.na(window) || is.na(recseq) || window == "" || recseq == "" || is.na(mod_pos)) {
     return(0)
   }
-  
+
   # Remove leading N from window
   w_chars <- strsplit(window, "")[[1]]
   leading_N <- 0
@@ -142,18 +142,18 @@ longest_overlap_backward <- function(window, recseq, mod_pos) {
   }
   w_clean <- substr(window, leading_N + 1, nchar(window))
   if (nchar(w_clean) == 0) return(0)
-  
+
   # Adjust mod_pos for leading N removal
   mod_pos_in_clean <- mod_pos - leading_N
   if (mod_pos_in_clean < 1) return(0)
-  
+
   max_len <- 0
   limit <- min(nchar(w_clean), nchar(recseq))
-  
+
   for (k in seq_len(limit)) {
     r_suffix <- substr(recseq, nchar(recseq) - k + 1, nchar(recseq))
     w_prefix <- substr(w_clean, 1, k)
-    
+
     if (ambiguous_match(r_suffix, w_prefix)) {
       # mod_pos must be within or after the overlap region
       if (mod_pos_in_clean <= k) {
@@ -169,7 +169,7 @@ longest_overlap_backward <- function(window, recseq, mod_pos) {
 concat_backward <- function(window, recseq, mod_pos) {
   k <- longest_overlap_backward(window, recseq, mod_pos)
   if (k == 0) return(NA_character_)
-  
+
   # Remove leading N
   w_chars <- strsplit(window, "")[[1]]
   leading_N <- 0
@@ -178,11 +178,11 @@ concat_backward <- function(window, recseq, mod_pos) {
     else break
   }
   w_clean <- substr(window, leading_N + 1, nchar(window))
-  
+
   # Resolve overlap
   r_suffix <- substr(recseq, nchar(recseq) - k + 1, nchar(recseq))
   w_prefix <- substr(w_clean, 1, k)
-  
+
   resolved <- ""
   for (i in 1:k) {
     cr <- substr(r_suffix, i, i)
@@ -196,7 +196,7 @@ concat_backward <- function(window, recseq, mod_pos) {
       resolved <- paste0(resolved, cw)
     }
   }
-  
+
   pre <- substr(recseq, 1, nchar(recseq) - k)
   post <- substr(w_clean, k + 1, nchar(w_clean))
   return(paste0(pre, resolved, post))
@@ -232,10 +232,10 @@ cross_join_and_filter_na <- function(df_filtered, df_meth_blocked) {
 check_extended_compatible <- function(extended_seq, target_seq) {
   L_ext <- nchar(extended_seq)
   L_tar <- nchar(target_seq)
-  
+
   if (L_ext < L_tar) return(FALSE)
   if (L_ext == L_tar) return(ambiguous_match(extended_seq, target_seq))
-  
+
   # Check if target can be found within extended
   for (start in 1:(L_ext - L_tar + 1)) {
     candidate <- substr(extended_seq, start, start + L_tar - 1)
@@ -250,10 +250,10 @@ check_extended_compatible <- function(extended_seq, target_seq) {
 #' @export
 extend_to_target_forward <- function(concat_seq, target_seq) {
   if (is.na(concat_seq)) return(NA_character_)
-  
+
   L_concat <- nchar(concat_seq)
   L_target <- nchar(target_seq)
-  
+
   # Find overlap: concat_suffix matches target_prefix
   max_overlap <- 0
   for (k in seq_len(min(L_concat, L_target))) {
@@ -263,9 +263,9 @@ extend_to_target_forward <- function(concat_seq, target_seq) {
       max_overlap <- k
     }
   }
-  
+
   if (max_overlap == 0) return(NA_character_)
-  
+
   extended <- paste0(concat_seq, substr(target_seq, max_overlap + 1, L_target))
   return(extended)
 }
@@ -274,10 +274,10 @@ extend_to_target_forward <- function(concat_seq, target_seq) {
 #' @export
 extend_to_target_backward <- function(concat_seq, target_seq) {
   if (is.na(concat_seq)) return(NA_character_)
-  
+
   L_concat <- nchar(concat_seq)
   L_target <- nchar(target_seq)
-  
+
   # Find overlap: concat_prefix matches target_suffix
   max_overlap <- 0
   for (k in seq_len(min(L_concat, L_target))) {
@@ -287,26 +287,26 @@ extend_to_target_backward <- function(concat_seq, target_seq) {
       max_overlap <- k
     }
   }
-  
+
   if (max_overlap == 0) return(NA_character_)
-  
+
   extended <- paste0(substr(target_seq, 1, L_target - max_overlap), concat_seq)
   return(extended)
 }
 
 #' Validate mod_position: user's methylated position must match REBASE mod_position
 #' @export
-validate_mod_position <- function(extended_seq, target_seq, recseq, 
-                                   user_mod_position, rebase_mod_position) {
-  if (is.na(extended_seq) || is.na(recseq) || 
+validate_mod_position <- function(extended_seq, target_seq, recseq,
+                                  user_mod_position, rebase_mod_position) {
+  if (is.na(extended_seq) || is.na(recseq) ||
       is.na(user_mod_position) || is.na(rebase_mod_position)) {
     return(FALSE)
   }
-  
+
   L_ext <- nchar(extended_seq)
   L_rec <- nchar(recseq)
   L_tar <- nchar(target_seq)
-  
+
   # Step 1: Find where target aligns in extended
   target_start <- NA
   for (s in 1:(L_ext - L_tar + 1)) {
@@ -316,10 +316,10 @@ validate_mod_position <- function(extended_seq, target_seq, recseq,
     }
   }
   if (is.na(target_start)) return(FALSE)
-  
+
   # Step 2: User's mod position in extended coordinates
   user_pos_in_ext <- target_start + user_mod_position - 1
-  
+
   # Step 3: Find where RecSeq aligns in extended
   for (r in 1:(L_ext - L_rec + 1)) {
     if (ambiguous_match(substr(extended_seq, r, r + L_rec - 1), recseq)) {
@@ -335,6 +335,18 @@ validate_mod_position <- function(extended_seq, target_seq, recseq,
     }
   }
   return(FALSE)
+}
+
+#' Trim leading and trailing N from sequence
+#' @export
+trim_outer_N <- function(seq) {
+  if (is.na(seq) || seq == "") return(seq)
+  # Remove leading N
+  seq <- gsub("^N+", "", seq)
+  # Remove trailing N
+  seq <- gsub("N+$", "", seq)
+  if (seq == "") return(NA_character_)
+  return(seq)
 }
 
 # ============================================
@@ -356,12 +368,12 @@ match_enzyme_sequences <- function(mod_type, target_seq) {
   df_meth_blocked <- filter_meth_blocked(methylation_sensitivity)
   df_meth_filtered <- filter_meth_by_mod_type(df_meth_blocked, mod_type)
   df_joined <- cross_join_and_filter_na(methylasensitive_window, df_meth_filtered)
-  
+
   # Get user's original mod_position
   user_mod_position <- methylasensitive_window$start[1] + methylasensitive_window$mod_pos[1] - 1
-  
+
   results <- list()
-  
+
   # ============================================
   # METHOD 1: FORWARD overlap
   # ============================================
@@ -377,7 +389,7 @@ match_enzyme_sequences <- function(mod_type, target_seq) {
       )
     ) %>%
     dplyr::filter(overlap_fwd > 0, !is.na(concat_fwd))
-  
+
   if (nrow(df_fwd) > 0) {
     df_fwd <- df_fwd %>%
       dplyr::mutate(
@@ -389,7 +401,7 @@ match_enzyme_sequences <- function(mod_type, target_seq) {
         match_type = "forward"
       ) %>%
       dplyr::filter(!is.na(extended_seq))
-    
+
     if (nrow(df_fwd) > 0) {
       df_fwd <- df_fwd %>%
         dplyr::mutate(
@@ -402,11 +414,11 @@ match_enzyme_sequences <- function(mod_type, target_seq) {
         ) %>%
         dplyr::filter(valid) %>%
         dplyr::select(-valid, -overlap_fwd, -concat_fwd)
-      
+
       results$forward <- df_fwd
     }
   }
-  
+
   # ============================================
   # METHOD 2: BACKWARD overlap
   # ============================================
@@ -422,7 +434,7 @@ match_enzyme_sequences <- function(mod_type, target_seq) {
       )
     ) %>%
     dplyr::filter(overlap_bwd > 0, !is.na(concat_bwd))
-  
+
   if (nrow(df_bwd) > 0) {
     df_bwd <- df_bwd %>%
       dplyr::mutate(
@@ -434,7 +446,7 @@ match_enzyme_sequences <- function(mod_type, target_seq) {
         match_type = "backward"
       ) %>%
       dplyr::filter(!is.na(extended_seq))
-    
+
     if (nrow(df_bwd) > 0) {
       df_bwd <- df_bwd %>%
         dplyr::mutate(
@@ -447,17 +459,26 @@ match_enzyme_sequences <- function(mod_type, target_seq) {
         ) %>%
         dplyr::filter(valid) %>%
         dplyr::select(-valid, -overlap_bwd, -concat_bwd)
-      
+
       results$backward <- df_bwd
     }
   }
-  
+
   # ============================================
-  # Combine results
+  # Combine and clean results
   # ============================================
   if (length(results) > 0) {
-    result_df <- dplyr::bind_rows(results) %>%
-      dplyr::distinct(Enzyme, forward_RecSeq, extended_seq, .keep_all = TRUE)
+    result_df <- dplyr::bind_rows(results)
+
+    # Trim outer N from extended_seq
+    result_df <- result_df %>%
+      dplyr::mutate(extended_seq = purrr::map_chr(extended_seq, trim_outer_N)) %>%
+      dplyr::filter(!is.na(extended_seq), extended_seq != "")
+
+    # Remove duplicates: same Enzyme + same extended_seq
+    result_df <- result_df %>%
+      dplyr::distinct(Enzyme, extended_seq, .keep_all = TRUE)
+
     rownames(result_df) <- NULL
   } else {
     result_df <- data.frame(
@@ -468,7 +489,7 @@ match_enzyme_sequences <- function(mod_type, target_seq) {
       stringsAsFactors = FALSE
     )
   }
-  
+
   result_df <<- result_df
   return(result_df)
 }

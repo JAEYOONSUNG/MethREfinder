@@ -60,6 +60,7 @@ matched_enzymes <- match_enzyme_sequences(
 ## Quick start
 ```r
 run_MethREfinder(target_seq = "CGAANNNNNNNTARC", mod_type = "6mA", window_sizes = c(4,5,6), direction = "forward", mod_position = 4)
+
 run_MethREfinder(target_seq = "CCWGG", mod_type = "5mC", window_sizes = c(4,5,6), direction = "forward", mod_position = 2)
 ```
 

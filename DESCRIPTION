@@ -13,13 +13,15 @@ Depends:
     stringr,
     dplyr,
     tidyr,
-    xlsx
+    xlsx,
+    rlang	
 Imports:
     httr,
     xml2,
     stringr,
     dplyr,
     tidyr,
-    xlsx
+    xlsx,
+    rlang
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.3

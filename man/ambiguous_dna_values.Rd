@@ -10,14 +10,7 @@ An object of class \code{list} of length 15.
 \usage{
 ambiguous_dna_values
 }
-\value{
-A named list where each element is a string of acceptable bases.
-}
 \description{
-A list mapping each nucleotide (or ambiguous IUPAC code) to its possible base representations.
-}
-\examples{
-ambiguous_dna_values$N  # returns "ACGT"
-
+Ambiguous DNA values for nucleotide matching
 }
 \keyword{datasets}

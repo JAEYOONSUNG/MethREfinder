@@ -6,19 +6,6 @@
 \usage{
 ambiguous_match(seq1, seq2)
 }
-\arguments{
-\item{seq1}{A character string representing the first DNA sequence.}
-
-\item{seq2}{A character string representing the second DNA sequence.}
-}
-\value{
-Logical value (\code{TRUE} or \code{FALSE}) indicating if the sequences match ambiguously.
-}
 \description{
-This function checks whether two sequences match ambiguously based on IUPAC nucleotide codes.
-}
-\examples{
-ambiguous_match("A", "M") # TRUE (M represents A or C)
-ambiguous_match("T", "G") # FALSE
-
+Check ambiguous match between two sequences
 }

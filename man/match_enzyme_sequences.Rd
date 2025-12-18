@@ -7,7 +7,7 @@
 match_enzyme_sequences(mod_type, target_seq)
 }
 \arguments{
-\item{mod_type}{Character string (e.g., "4mC").}
+\item{mod_type}{Character string (e.g., "4mC", "5mC", "6mA").}
 
 \item{target_seq}{Character string (target DNA sequence).}
 }
@@ -15,5 +15,9 @@ match_enzyme_sequences(mod_type, target_seq)
 Data frame with matched enzyme sequences.
 }
 \description{
-Match enzyme sequences with target sequence
+Matches enzymes against a target sequence using both FORWARD and BACKWARD overlap.
+\itemize{
+\item FORWARD: window_suffix + RecSeq_prefix (RecSeq extends after window)
+\item BACKWARD: RecSeq_suffix + window_prefix (RecSeq extends before window)
+}
 }

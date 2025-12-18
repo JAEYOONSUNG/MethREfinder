@@ -6,18 +6,6 @@
 \usage{
 cross_join_and_filter_na(df_filtered, df_meth_blocked)
 }
-\arguments{
-\item{df_filtered}{A data frame containing sequence windows.}
-
-\item{df_meth_blocked}{A data frame containing blocked enzyme data.}
-}
-\value{
-A data frame with cross-joined data and removed NA values.
-}
 \description{
-Performs a cross join between two data frames and removes rows with NA values in key columns.
-}
-\examples{
-df_joined <- cross_join_and_filter_na(df_filtered, df_meth_blocked)
-
+Cross join and filter NA values
 }

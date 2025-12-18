@@ -6,16 +6,6 @@
 \usage{
 filter_meth_blocked(methylation_sensitivity)
 }
-\arguments{
-\item{methylation_sensitivity}{A data frame from REBASE containing enzyme information.}
-}
-\value{
-A filtered data frame with only blocked enzymes.
-}
 \description{
-Filters methylation sensitivity data to retain only enzymes whose cleavage is blocked.
-}
-\examples{
-df_blocked <- filter_meth_blocked(methylation_sensitivity)
-
+Filter methylation sensitivity data for blocked enzymes
 }
